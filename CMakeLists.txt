@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.17)
+project(megadrive C)
+
+set(CMAKE_C_STANDARD 99)
+
+add_executable(megadrive main.c m68k/cpu.c m68k/cpu.h m68k/utils.c m68k/utils.h)
