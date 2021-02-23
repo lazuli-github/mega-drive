@@ -215,13 +215,13 @@ m68kins_move(m68kreg dst, m68kaddrmode dstmode, m68kreg src, m68kaddrmode srcmod
 	} else {
 		switch (size) {
 		case M68KBYTE:
-			result = (dstvalue & 0xFFFFFF00) | (srcvalue & 0x000000FF);
+			result = (dstvalue & 0xffffff00) | (srcvalue & 0x000000ff);
 			break;
 		case M68KWORD:
-			result = (dstvalue & 0xFFFF0000) | (srcvalue & 0x0000FFFF);
+			result = (dstvalue & 0xffff0000) | (srcvalue & 0x0000ffff);
 			break;
 		case M68KLWORD:
-			result = (dstvalue & 0x00000000) | (srcvalue & 0xFFFFFFFF);
+			result = (dstvalue & 0x00000000) | (srcvalue & 0xffffffff);
 			break;
 		default:
 			UNEXPECTEDERROR();
