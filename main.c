@@ -8,7 +8,6 @@ int
 main(void)
 {
 	m68kinit();
-	printf("%d\n", fstbitindex(0b10000));
 
 	return 0;
 }
