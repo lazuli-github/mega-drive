@@ -59,7 +59,7 @@ readmem(uint32_t addr, int size)
 void
 meminit(void)
 {
-	/* XXX: watch out for off-by-one bugs. The cart memory starts at
+	/* XXX: watch out for off-by-one bugs. The cartridge memory starts at
 	 * 0x000000 and ends at 0x3fffff, so its size is NOT 0x3fffff. Because
 	 * of the first address 0x000000, its size is actually 0x3fffff + 1. */
 	cartmem.mem = &memspace[0x000000];
