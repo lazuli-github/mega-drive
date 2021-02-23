@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "../m68k/utils.h"
 
-extern uint8_t memspace[] = {0};
+uint8_t memspace[] = {0};
 struct cartmem cartmem = {};
 struct ram ram = {};
 
