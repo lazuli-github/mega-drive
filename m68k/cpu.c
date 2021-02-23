@@ -1,6 +1,7 @@
 #include <assert.h>
 
 #include "cpu.h"
+#include "../memory/memory.h"
 #include "utils.h"
 
 static struct m68kregs m68kregs = {};
@@ -159,10 +160,16 @@ m68ksetsttsbit(m68ksttsmask bitname, m68ksttsbit value)
 	m68ksetreg(M68KREG_SR, newsr);
 }
 
+/*
+ * https://en.wikibooks.org/wiki/68000_Assembly#Addressing_Modes
+ * TODO: Make this function shorter and write tests.
+ */
 void
-m68kmove_i(m68kreg dst, m68kaddrmode dstmode, m68kreg src, m68kaddrmode srcmode, m68ksize size)
+m68kins_move(m68kreg dst, m68kaddrmode dstmode, m68kreg src, m68kaddrmode srcmode, m68ksize size)
 {
-	m68kregvalue dstvalue = m68kgetreg(dst), srcvalue = m68kgetreg(src);
+	int isdstind = 0, issrcind = 0;
+	m68kregvalue dstvalue, srcvalue;
+	uint32_t dstaddr, srcaddr;
 	m68kregvalue result = 0;
 
 	switch (dstmode) {
@@ -173,7 +180,10 @@ m68kmove_i(m68kreg dst, m68kaddrmode dstmode, m68kreg src, m68kaddrmode srcmode,
 		dstvalue = m68kgetreg(dst);
 		break;
 	case M68KADDRMODE_IND:
-		/* TODO: add support for indirect addressing mode */
+		isdstind = 1;
+		if (dst >= M68KREG_A0 && dst <= M68KREG_A7 && size != M68KLWORD)
+			UNEXPECTEDERROR();
+		dstaddr = m68kgetreg(dst);
 		break;
 	default:
 		UNEXPECTEDERROR();
@@ -186,38 +196,50 @@ m68kmove_i(m68kreg dst, m68kaddrmode dstmode, m68kreg src, m68kaddrmode srcmode,
 		srcvalue = m68kgetreg(src);
 		break;
 	case M68KADDRMODE_IND:
-		/* TODO: add support for indirect addressing mode */
+		issrcind = 1;
+		if (dst >= M68KREG_A0 && dst <= M68KREG_A7 && size != M68KLWORD)
+			UNEXPECTEDERROR();
+		srcaddr = m68kgetreg(dst);
+		srcvalue = readmem(srcaddr, size);
 		break;
 	default:
 		UNEXPECTEDERROR();
 	}
 
-	switch (size) {
-	case M68KBYTE:
-		result = (dstvalue & 0xFFFFFF00) | (srcvalue & 0x000000FF);
-		break;
-	case M68KWORD:
-		result = (dstvalue & 0xFFFF0000) | (srcvalue & 0x0000FFFF);
-		break;
-	case M68KLWORD:
-		result = (dstvalue & 0x00000000) | (srcvalue & 0xFFFFFFFF);
-		break;
-	default:
+	/* Moving directly from memory to memory is not possible. */
+	if (isdstind && issrcind)
 		UNEXPECTEDERROR();
+
+	if (isdstind) {
+		writemem(dstaddr, srcvalue, size);
+	} else {
+		switch (size) {
+		case M68KBYTE:
+			result = (dstvalue & 0xFFFFFF00) | (srcvalue & 0x000000FF);
+			break;
+		case M68KWORD:
+			result = (dstvalue & 0xFFFF0000) | (srcvalue & 0x0000FFFF);
+			break;
+		case M68KLWORD:
+			result = (dstvalue & 0x00000000) | (srcvalue & 0xFFFFFFFF);
+			break;
+		default:
+			UNEXPECTEDERROR();
+		}
+
+		if (result & 0x80)
+			m68ksetsttsbit(M68KSTTS_NEGATIVE, 1);
+		else
+			m68ksetsttsbit(M68KSTTS_NEGATIVE, 0);
+		if (!result)
+			m68ksetsttsbit(M68KSTTS_ZERO, 1);
+		else
+			m68ksetsttsbit(M68KSTTS_ZERO, 1);
+		m68ksetsttsbit(M68KSTTS_OVERFLOW, 0);
+		m68ksetsttsbit(M68KSTTS_CARRY, 0);
+
+		m68ksetreg(dst, result);
 	}
-
-	if (result & 0x80)
-		m68ksetsttsbit(M68KSTTS_NEGATIVE, 1);
-	else
-		m68ksetsttsbit(M68KSTTS_NEGATIVE, 0);
-	if (!result)
-		m68ksetsttsbit(M68KSTTS_ZERO, 1);
-	else
-		m68ksetsttsbit(M68KSTTS_ZERO, 1);
-	m68ksetsttsbit(M68KSTTS_OVERFLOW, 0);
-	m68ksetsttsbit(M68KSTTS_CARRY, 0);
-
-	m68ksetreg(dst, result);
 }
 
 /*
