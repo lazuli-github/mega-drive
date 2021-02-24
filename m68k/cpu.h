@@ -116,7 +116,8 @@ typedef enum m68kaddrmode {
 	M68KADDRMODE_DIMM,
 	M68KADDRMODE_AIMM,
 	M68KADDRMODE_IND,
-	/* TODO: add more addressing modes */
+	M68KADDRMODE_IND_POSI,
+	M68KADDRMODE_IND_PRED,
 } m68kaddrmode;
 
 typedef enum m68ksize {
