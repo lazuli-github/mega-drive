@@ -6,7 +6,7 @@
 #include "utils.h"
 
 void
-unexpectederror(const char* file, const char* func, int line)
+unexpectederror(const char *file, const char *func, int line)
 {
 	fprintf(stderr, "*** UNEXPECTED ERROR ***\n");
 #ifdef NDEBUG
