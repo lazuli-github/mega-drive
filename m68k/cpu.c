@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 
 #include "cpu.h"
 #include "../memory/memory.h"
@@ -163,6 +164,8 @@ m68ksetsttsbit(m68ksttsmask bitname, m68ksttsbit value)
 /*
  * https://en.wikibooks.org/wiki/68000_Assembly#Addressing_Modes
  * TODO: Make this function shorter and write tests.
+ * I'll make this function shorter probably by adding separate functions
+ * to deal with addressing modes.
  */
 void
 m68kins_move(m68kreg dst, m68kaddrmode dstmode, m68kreg src, m68kaddrmode srcmode, m68ksize size)
@@ -171,37 +174,39 @@ m68kins_move(m68kreg dst, m68kaddrmode dstmode, m68kreg src, m68kaddrmode srcmod
 	m68kregvalue dstvalue, srcvalue, result = 0;
 	uint32_t dstaddr, srcaddr;
 
-	switch (dstmode) {
-	case M68KADDRMODE_DIMM:
+	if (dstmode == M68KADDRMODE_DIMM || dstmode == M68KADDRMODE_AIMM) {
 		dstvalue = m68kgetreg(dst);
-		break;
-	case M68KADDRMODE_AIMM:
-		dstvalue = m68kgetreg(dst);
-		break;
-	case M68KADDRMODE_IND:
+	} else if (dstmode == M68KADDRMODE_IND) {
 		isdstind = 1;
 		if (dst >= M68KREG_A0 && dst <= M68KREG_A7 && size != M68KLWORD)
 			UNEXPECTEDERROR();
 		dstaddr = m68kgetreg(dst);
-		break;
-	default:
+	} else {
 		UNEXPECTEDERROR();
 	}
-	switch (srcmode) {
-	case M68KADDRMODE_DIMM:
+
+	if (srcmode == M68KADDRMODE_DIMM || srcmode == M68KADDRMODE_AIMM) {
 		srcvalue = m68kgetreg(src);
-		break;
-	case M68KADDRMODE_AIMM:
-		srcvalue = m68kgetreg(src);
-		break;
-	case M68KADDRMODE_IND:
+	} else if (srcmode == M68KADDRMODE_IND || M68KADDRMODE_IND_POSI || M68KADDRMODE_IND_PRED) {
 		issrcind = 1;
 		if (dst >= M68KREG_A0 && dst <= M68KREG_A7 && size != M68KLWORD)
 			UNEXPECTEDERROR();
-		srcaddr = m68kgetreg(dst);
+		if (srcmode == M68KADDRMODE_IND_PRED) {
+			if (src == M68KREG_A7 && size < 2)
+				UNEXPECTEDERROR();
+			srcaddr = m68kgetreg(src);
+			m68ksetreg(src, srcaddr - size);
+		}
+		srcaddr = m68kgetreg(src);
 		srcvalue = readmem(srcaddr, size);
-		break;
-	default:
+		if (srcmode == M68KADDRMODE_IND_POSI) {
+			/* A7 must point of an event address so it will
+			 * always increment by at least 2. */
+			if (src == M68KREG_A7 && size < 2)
+				UNEXPECTEDERROR();
+			m68ksetreg(src, srcaddr + size);
+		}
+	} else {
 		UNEXPECTEDERROR();
 	}
 
@@ -256,6 +261,11 @@ m68kinit(void)
 	m68ksetsttsbit(M68KSTTS_SUPSTATE, 1);
 	/* Ensures that the CPU is in supervisor mode. */
 	assert(m68kgetreg(M68KREG_SR) >= 0b0010000000000000);
+
+	*(m68kregs.addrregsp[7]) = 0x4;
+	writemem(0x2, 0xcafe, M68KWORD);
+	m68kins_move(M68KREG_D0, M68KADDRMODE_DIMM, M68KREG_A7, M68KADDRMODE_IND_PRED, M68KWORD);
+	printf("%x\n", (uint16_t) m68kregs.dataregs[0]);
 
 	INITIALIZED = 1;
 }
