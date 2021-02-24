@@ -2,9 +2,9 @@
 #include <stdio.h>
 
 #include "memory.h"
-#include "../m68k/utils.h"
+#include "../utils/utils.h"
 
-uint8_t memspace[] = {0};
+uint8_t memspace[] = {};
 struct cartmem cartmem = {};
 struct ram ram = {};
 

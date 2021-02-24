@@ -2,7 +2,7 @@
 
 #include "cpu.h"
 #include "../memory/memory.h"
-#include "utils.h"
+#include "../utils/utils.h"
 
 static struct m68kregs m68kregs = {};
 static int INITIALIZED = 0;
@@ -168,9 +168,8 @@ void
 m68kins_move(m68kreg dst, m68kaddrmode dstmode, m68kreg src, m68kaddrmode srcmode, m68ksize size)
 {
 	int isdstind = 0, issrcind = 0;
-	m68kregvalue dstvalue, srcvalue;
+	m68kregvalue dstvalue, srcvalue, result = 0;
 	uint32_t dstaddr, srcaddr;
-	m68kregvalue result = 0;
 
 	switch (dstmode) {
 	case M68KADDRMODE_DIMM:
